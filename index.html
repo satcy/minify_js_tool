@@ -1,0 +1,81 @@
+<html>
+<head>
+<title>Drop And Minify</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="lib/parse-js.js"></script>
+<script src="lib/process.js"></script>
+<script src="lib/squeeze-more.js"></script>
+<script>
+
+function onDragOver( event ){
+    event.preventDefault();
+}
+
+
+function onDrop(event){
+    event.preventDefault();
+
+    var result = document.getElementById("js_code");
+
+    var files = event.dataTransfer.files;
+    var maxCnt = files.length;
+    var cnt = 0;
+    if ( maxCnt > 0 ) next();
+
+    function next(){
+        var f = files[cnt];
+        //console.log("ファイル名：" + f.name + "\nファイルの型：" + f.type + "\nファイルサイズ：" + f.size / 1000 + " KB "+ "\n最終更新日時：" + f.lastModifiedDate ); 
+        var reader = new FileReader();
+        
+        if ( f.name.indexOf(".js") != -1 ) {
+            reader.onloadend = function(){
+                
+                result.value += reader.result + "\n";
+                cnt ++;
+                if ( cnt < maxCnt ) next();
+            };
+            reader.readAsText( f );
+        } else {
+            cnt ++;
+            if ( cnt < maxCnt ) next();
+        }
+    }
+}
+
+function clearInput(){
+    var result = document.getElementById("js_code");
+    result.value = "";
+}
+
+function doMinify(){
+    var result = document.getElementById("js_code");
+    var str = result.value;
+
+    var options = {};
+    var ast = parse(str, options.strict_semicolons); // parse code and get the initial AST
+    ast = ast_mangle(ast, options.mangle_options); // get a new AST with mangled names
+    ast = ast_squeeze(ast, options.squeeze_options); // get an AST with compression optimizations
+    var final_code = gen_code(ast, options.gen_options); // compressed code here
+    document.getElementById("result").value = final_code;
+
+}
+
+</script>
+</head>
+  <body>
+    <form>
+    <p>下のテキストエリアにJSファイルをドロップ（複数可）（階層不可）動作確認環境：Mac OSX Chrome</p>
+    <div>
+        <textarea ondragover="onDragOver(event);" ondrop="onDrop(event)" id="js_code" cols="200" rows="20"></textarea>
+    </div>
+    <div>
+    <button type="button" id="clearBtn" name="clearBtn" onclick="clearInput()">CLEAR</button>
+    <button type="button" id="minify" name="minify" onclick="doMinify()">MINIFY</button>
+    </div>
+    <div>
+    <textarea id="result" cols="200" rows="20"></textarea>
+    </div>
+    </form>
+    <div>made with <a href="https://github.com/mishoo/UglifyJS" target="_blank">UglifyJS</a></div>
+  </body>
+</html>
